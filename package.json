@@ -1,0 +1,36 @@
+{
+  "name": "es-fetch-interceptor",
+  "version": "1.0.0",
+  "description": "wrapper & interceptor for native fetch",
+  "main": "./src/index.js",
+  "browser": "./src/index.js",
+  "scripts": {
+    "build": "npm run clean && rollup -c rollup.build.js",
+    "clean": "rimraf ./dist",
+    "test": "jest"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.5.4",
+    "@babel/preset-env": "^7.5.4",
+    "babel-jest": "^24.8.0",
+    "jest": "^24.8.0",
+    "rimraf": "^2.6.3",
+    "rollup": "^1.16.3",
+    "rollup-plugin-terser": "^5.1.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/marsbos/es-fetch-interceptor.git"
+  },
+  "keywords": [
+    "interceptor",
+    "fetch"
+  ],
+  "author": "Marcel Bos",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/marsbos/es-fetch-interceptor/issues"
+  },
+  "homepage": "https://github.com/marsbos/es-fetch-interceptor#readme",
+  "dependencies": {}
+}

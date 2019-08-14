@@ -12,7 +12,8 @@ It does not monkeypatch fetch, but instead it uses a wrapper instance you can us
 This means you have total freedom in the kind of fetch you'll want to do, because sometimes it makes no sense to use interceptors. In that case, just use the native fetch or whatever other tool you prefer.  
 
 ## Fetch wrapper instance
-The `createFetch` function creates a wrapper instance for the native fetch. This means that for each fetch request you can choose which interceptors you want to use.  
+The `createFetch` function creates a wrapper instance for the native fetch. It makes your interceptors active.  
+With this function you can also decide which interceptors you want to use.
 
 ## Global interceptors
 Interceptors that need to be called on each fetch request, can be registered anytime, anywhere in your codebase. 

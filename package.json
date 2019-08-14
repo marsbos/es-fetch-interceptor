@@ -2,8 +2,8 @@
   "name": "es-fetch-interceptor",
   "version": "1.0.0",
   "description": "wrapper & interceptor for native fetch",
-  "main": "./src/index.js",
-  "browser": "./src/index.js",
+  "main": "./dist/index.min.js",
+  "browser": "./dist/index.min.js",
   "scripts": {
     "build": "npm run clean && rollup -c rollup.build.js",
     "clean": "rimraf ./dist",

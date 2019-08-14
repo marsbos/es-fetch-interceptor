@@ -1,118 +1,34 @@
 # es-fetch-interceptor
 Wrapper & interceptors for browser's native `fetch`, inspired by Axios.  
-With es-fetch-interceptor you can add interceptors, for `global` use and/or for `instances`, which intercept fetch requests.     
-It does not monkeypatch fetch because this can interfere with other libraries/tools.  
 
 ## Prerequisites
 - Make sure you have either `fetch` support or a fetch polyfill.  
 - Support for `Proxy` or a polyfill.
 
-## Adding interceptors
-### Global
-To add a global interceptor, one which will be invoked at every request, you can do the following:  
+## General
+With es-fetch-interceptor you can register interceptors for requests, responses & errors.  
+Each of (global) request, response and error can be chained with multiple interceptors.  
+It does not monkeypatch fetch, but instead it uses a wrapper instance you can use to do your fetch requests.  
+This means you have total freedom in the kind of fetch you'll want to do, because sometimes it makes no sense to use interceptors. In that case, just use the native fetch or whatever other tool you prefer.  
 
-#### Example:  
-Note that you can chain global interceptors just by adding a new one.  
-```js
-import { fetchInterceptor } from 'es-fetch-interceptor';
+## Fetch wrapper instance
+The `createFetch` function creates a wrapper instance for the native fetch. This means that for each fetch request you can choose which interceptors you want to use.  
 
-// Request interceptor middleware:
-fetchInterceptor.interceptors.request.use((req, next, reject) => {
-  // do something useful with the request:
-  next({ ...req, headers: { ...req.headers,  myHeader: 'mycustom-header' } });
-});
-// Response interceptor middleware:
-fetchInterceptor.interceptors.response.use((res, next, reject) => {
-  // do something useful with the response:
-  next(res);
-});
-// Error interceptor middleware:
-fetchInterceptor.interceptors.error.use((error, next) => {
-  // do something useful with the error:
-  next(error);
-});
-// Add another (global) request interceptor:
-fetchInterceptor.interceptors.request.use((req, next, reject) => {
-  // do something useful with the request:
-  next({ ...req, headers: { ...req.headers,  anotherHeader: 'another-header' } });
-});
-```
-Note that it is not required to provide all of `request`, `response` & `error`. Pick at least one of them to make your interceptor active.  
+## Global interceptors
+Interceptors that need to be called on each fetch request, can be registered anytime, anywhere in your codebase. 
+If you want to use multiple interceptors for the same intent (request, response and/or error), just add one. All interceptors belonging to the same 'group' will be chained and are called in the same order they were registered.
 
-### Usage
-You can now make use of the interceptor middleware anywhere in your codebase.  
-Each interceptor you defined earlier, will be called.  
+Note that it is not required to provide all of `request`, `response` & `error`. Pick at least one of them to make your global interceptor active. 
 
-#### Example:    
-```js
-import { createFetch } from 'es-fetch-interceptor';
-const fetch = createFetch();
-...  
-await fetch('/someApi', {
-  ...properties here...
-});
-```
-
-Note that we just called `createFetch` to get an 'instance' of a fetch wrapper that will be created.   
-When called like this, without any arguments, it means that we are using only global interceptors, if any provided.  
-Below, when defining instance interceptors, we'll see more.  
-
-### Instance
-Instance interceptor middleware can run completely isolated from any global interceptor middleware.  
-To add your instance interceptors, you can use the `createFetch` function combined with the `createInstanceInterceptors` function.  Also, it is possible to combine the instance middleware with any provided global interceptor middleware.   
-Therefore you can use the `combineInterceptors` function.  
-
-#### Examples:
-
-This example combines global interceptors with custom interceptors.  
-```js
-import { createFetch, combineInterceptors, createInstanceInterceptors } from 'es-fetch-interceptor';
-const fetch = createFetch(combineInterceptors(createInstanceInterceptors(
-  { 
-    request: (req, next, reject) => {
-      // do something useful with the request
-      next(req);
-    },
-    response: (res, next, reject) => {
-      // do something useful with the response
-      next(res);
-    },
-  }
-)));
-```
-
-This example uses only custom interceptors, which means any provided global interceptor will be bypassed.  
-
-```js
-import { createFetch, combineInterceptors, createInstanceInterceptors } from 'es-fetch-interceptor';
-const fetch = createFetch(createInstanceInterceptors(
-  { 
-    request: (req, next, reject) => {
-      // do something useful with the request
-      next(req);
-    },
-    response: (res, next, reject) => {
-      // do something useful with the response
-      next(res);
-    },
-    error: (error, next, reject) => {
-      // Do something with the error:
-      next(error);
-    }
-  }
-));
-```
-
-### Usage
-Same as above. Just use fetch as you normally would.    
-
+## Instance interceptors
+If you want certain interceptors to be called for specific fetch requests, you can register so called 'instance' interceptors. Instance interceptors differ from global interceptors in terms of scope. Global interceptors are called each request while instance interceptors are only called if they were registered for that specific fetch instance.  
 
 ## Interceptor function anatomy
-Each interceptor handler or function gets three arguments: 
-1. the request | response | error object, you can use for custom processing like adding headers or altering a response,
-2. the `next` function to call the next interceptor in the chain,
-3. a reject function, to reject/cancel the request or response processing.  
-Calling the reject function, will trigger the `catch` in your fetch call.  
+An interceptor function expects three arguments: 
+1. the `request | response | error` object, you can use for custom processing like adding headers, altering a response or logging errors,
+2. the `next` function to call the next interceptor in the chain (it completes the chain/process internally if all interceptors are called),
+3. a `reject` function, to reject/cancel the request or response processing.  
+Calling the reject function, will trigger the `catch` in your client fetch call.  
 Any error interceptor middleware won't be called because error interceptors only act upon request/response fetch errors.  
 
 The request object is the request [init object](https://developer.mozilla.org/en-US/docs/Web/API/WindowOrWorkerGlobalScope/fetch#Syntax) used in the fetch call.  
@@ -124,40 +40,157 @@ The error object is a custom object which consists of:
 - the request object.
 
 
-#### Example:
+## Examples
+### Global interceptors only
 
+app.js
+```js
+import { fetchInterceptor } from 'es-fetch-interceptor';
+// Register request interceptor middleware:
+fetchInterceptor.interceptors.request.use((req, next, reject) => {
+  console.log('Global request interceptor');
+  next({ ...req, headers: { ...req.headers,  myHeader: 'mycustom-header' } });
+});
+```
+users.js
+```js
+import { createFetch } from 'es-fetch-interceptor';
+const fetch = createFetch();
+...  
+await fetch('/users', {
+  ...properties here...
+});
+```
+This will log 
+```
+Global request interceptor
+```
+
+### Global & instance interceptors combined
+app.js
+```js
+import { fetchInterceptor } from 'es-fetch-interceptor';
+// Register request interceptor middleware:
+fetchInterceptor.interceptors.request.use((req, next, reject) => {
+  console.log('Global request interceptor');
+  next({ ...req, headers: { ...req.headers,  myHeader: 'mycustom-header' } });
+});
+// Register response interceptor middleware:
+fetchInterceptor.interceptors.response.use((res, next, reject) => {
+  console.log('Global response interceptor #1');
+  next(res);
+});
+// Register response interceptor middleware:
+fetchInterceptor.interceptors.response.use((res, next, reject) => {
+  console.log('Global response interceptor #2');
+  next(res);
+});
+```
+users.js
 ```js
 import { createFetch, combineInterceptors, createInstanceInterceptors } from 'es-fetch-interceptor';
 const fetch = createFetch(combineInterceptors(createInstanceInterceptors(
   { 
     request: (req, next, reject) => {
-      // If some condition:
-      reject('some reason');
+      console.log('Instance request interceptor');
+      next(req);
     },
-    // This one won't be called, because we rejected earlier.
-    response: (res, next, reject) => {
-      // Do something useful with the response:
+    response: (res, next, reject)=>{
+      console.log('Instance response interceptor');
       next(res);
     },
-    // This one won't be called, because we rejected earlier.
-    error: (error, next, reject) => {
-      // Do something useful with the error:
-      next(error);
-    }
   }
 )));
+await fetch('/users', {
+  ...properties here...
+});
 ```
 
-```js
-const myResponse = await fetch('/myApi', {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({...
-    }),
-  }).catch(error => {
-    // Here we catch the error thrown in an interceptor
-  });
+This will log
 ```
+Global request interceptor
+Instance request interceptor
+Global response interceptor #1
+Global response interceptor #2
+Instance response interceptor
+```
+
+### Instance interceptors only
+app.js
+```js
+import { fetchInterceptor } from 'es-fetch-interceptor';
+// Register request interceptor middleware:
+fetchInterceptor.interceptors.request.use((req, next, reject) => {
+  console.log('Global request interceptor');
+  next({ ...req, headers: { ...req.headers,  myHeader: 'mycustom-header' } });
+});
+```
+users.js
+```js
+import { createFetch, createInstanceInterceptors } from 'es-fetch-interceptor';
+const fetch = createFetch(createInstanceInterceptors(
+  { 
+    request: (req, next, reject) => {
+      console.log('Instance request interceptor');
+      next(req);
+    },
+    response: (res, next, reject)=>{
+      console.log('Instance response interceptor');
+      next(res);
+    },
+  }
+));
+await fetch('/users', {
+  ...properties here...
+});
+```
+
+This will log
+```
+Instance request interceptor
+Instance response interceptor
+```
+
+## Error handling
+Any error occurred during the fetch request, can be intercepted. 
+
+### Example - Global & instance interceptors combined
+app.js
+```js
+import { fetchInterceptor } from 'es-fetch-interceptor';
+...
+// Register error interceptor middleware:
+fetchInterceptor.interceptors.error.use((error, next, reject) => {
+  console.log('Global error interceptor #1');
+  next(res);
+});
+```
+users.js
+```js
+import { createFetch, combineInterceptors, createInstanceInterceptors } from 'es-fetch-interceptor';
+const fetch = createFetch(combineInterceptors(createInstanceInterceptors(
+  { 
+    request: (req, next, reject) => {
+      console.log('Instance request interceptor');
+      next(req);
+    },
+    error: (error, next, reject)=>{
+      console.log('Instance error interceptor');
+      next(error);
+    },
+  }
+)));
+await fetch('/users', {
+  ...properties here...
+});
+```
+
+This will log
+```
+Global error interceptor #1
+Instance error interceptor
+```
+
 
 
 ## Tips

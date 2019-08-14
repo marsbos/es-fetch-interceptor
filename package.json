@@ -1,6 +1,6 @@
 {
   "name": "es-fetch-interceptor",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "wrapper & interceptor for native fetch",
   "main": "./dist/index.min.js",
   "browser": "./dist/index.min.js",
